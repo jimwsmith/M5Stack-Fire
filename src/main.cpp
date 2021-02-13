@@ -1,3 +1,4 @@
+#include "Version.h"
 #include <Arduino.h>
 
 void setup() {
