@@ -17,6 +17,9 @@
 #include <M5Stack.h>
 #include "arduinoFFT.h"
 #include <Adafruit_NeoPixel.h>
+#include "utility/MPU9250.h"
+
+MPU9250 IMU; // new a MPU9250 object
 
 #define M5STACK_FIRE_NEO_NUM_LEDS 10
 #define M5STACK_FIRE_NEO_DATA_PIN 15
@@ -76,6 +79,7 @@ void setup()
   M5.Power.begin();
   setup_scope();
   pixels.begin(); //RGB Bars
+  IMU.initMPU9250(); //Gyro with temp sensor
 }
 
 void waitForAutoTrigger()
@@ -176,6 +180,8 @@ double AdcMeanValue = 0;
 void loop(void)
 {
   int n;
+  static int r, g, b;
+  static int pixelNumber=0;// = random(0, M5STACK_FIRE_NEO_NUM_LEDS - 1);
   uint32_t nextTime = 0;
 
   //Check button status to switch device mode
@@ -250,29 +256,32 @@ switch (mode) {
     break;
   }
   case 2:
-    static int pixelNumber=0;// = random(0, M5STACK_FIRE_NEO_NUM_LEDS - 1);
-    pixelNumber++;
-    if(pixelNumber>9)pixelNumber=0;
-    int r = 1<<random(0, 7);
-    int g = 1<<random(0, 7);
-    int b = 1<<random(0, 7);
-
-    pixels.setPixelColor(pixelNumber, pixels.Color(r, g, b));     
-    pixels.show();
+    pixels.setPixelColor(pixelNumber, pixels.Color(0, 0, 0));  //Turn off last pixel   
     if (pixelNumber == 0) {
+      r = 1<<random(0, 7);
+      g = 1<<random(0, 7);
+      b = 1<<random(0, 7);
       M5.Lcd.fillScreen(BLUE);
       M5.Lcd.setTextSize(2);
       M5.Lcd.setCursor(0,0);
       M5.lcd.println("Battery Status");
-      M5.lcd.print("State of Charge");
+      M5.lcd.print("State of Charge ");
       M5.lcd.println(M5.Power.getBatteryLevel());
-      M5.lcd.print("Full Charge?");
+      M5.lcd.print("Full Charge? ");
       M5.lcd.println(M5.Power.isChargeFull());
-      M5.lcd.print("Charging now?");
+      M5.lcd.print("Charging now? ");
       M5.lcd.println(M5.Power.isCharging());
+      M5.lcd.print("Temp ");
+      IMU.tempCount = IMU.readTempData();
+      IMU.temperature = ((float) IMU.tempCount) / 333.87 + 21.0;
+      M5.lcd.println(IMU.temperature,1);
     }
+    pixelNumber++;
+    if(pixelNumber>9)pixelNumber=0;
+    pixels.setPixelColor(pixelNumber, pixels.Color(r, g, b));     
+    pixels.show();
+    delay(100);
     break;
-  
 //  default:
   }
 }
